@@ -22,6 +22,8 @@ public class Recommendation {
     @JoinColumn(name = "recommended_topic_id")
     private Topic recommendedTopic;
 
+    private String recommendationType; // EASY, MEDIUM, HARD
+
     @Column(columnDefinition="TEXT")
     private String reason;
 

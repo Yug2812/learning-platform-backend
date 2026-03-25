@@ -6,10 +6,10 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "quiz_attempts")
+@Table(name = "activity_logs")
 @Data
 @NoArgsConstructor
-public class QuizAttempt {
+public class ActivityLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -18,15 +18,12 @@ public class QuizAttempt {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "topic_id")
-    private Topic topic;
-
-    private int score;
-    private int totalQuestions;
+    private String activityType; // e.g. "LOGIN_SUCCESS", "LOGIN_FAILED", "QUIZ_ATTEMPT"
     
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    @Column(columnDefinition="TEXT")
+    private String details;
+    
+    private String ipAddress;
 
-    private LocalDateTime attemptedAt = LocalDateTime.now();
+    private LocalDateTime timestamp = LocalDateTime.now();
 }

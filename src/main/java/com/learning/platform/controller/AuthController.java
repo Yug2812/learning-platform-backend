@@ -9,6 +9,10 @@ import com.learning.platform.model.Role;
 import com.learning.platform.model.User;
 import com.learning.platform.repository.RoleRepository;
 import com.learning.platform.repository.UserRepository;
+import com.learning.platform.model.ActivityLog;
+import com.learning.platform.repository.ActivityLogRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.authentication.BadCredentialsException;
 import com.learning.platform.security.jwt.JwtUtils;
 import com.learning.platform.security.services.UserDetailsImpl;
 import jakarta.validation.Valid;
@@ -45,10 +49,52 @@ public class AuthController {
     @Autowired
     JwtUtils jwtUtils;
 
+    @Autowired
+    ActivityLogRepository activityLogRepository;
+
+    @Autowired
+    HttpServletRequest request;
+
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<JwtResponse>> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        User user = userRepository.findByEmail(loginRequest.getEmail()).orElse(null);
+        if (user != null && !user.isAccountNonLocked()) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>("error", "Account locked due to too many failed attempts.", null));
+        }
+
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+        } catch (BadCredentialsException e) {
+            if (user != null) {
+                user.setFailedAttemptCount(user.getFailedAttemptCount() + 1);
+                if (user.getFailedAttemptCount() >= 5) {
+                    user.setAccountNonLocked(false);
+                }
+                userRepository.save(user);
+
+                ActivityLog log = new ActivityLog();
+                log.setUser(user);
+                log.setActivityType("LOGIN_FAILED");
+                log.setDetails("Failed login attempt");
+                log.setIpAddress(request.getRemoteAddr());
+                activityLogRepository.save(log);
+            }
+            return ResponseEntity.badRequest().body(new ApiResponse<>("error", "Invalid credentials.", null));
+        }
+
+        if (user != null) {
+            user.setFailedAttemptCount(0);
+            userRepository.save(user);
+
+            ActivityLog log = new ActivityLog();
+            log.setUser(user);
+            log.setActivityType("LOGIN_SUCCESS");
+            log.setDetails("Successful login");
+            log.setIpAddress(request.getRemoteAddr());
+            activityLogRepository.save(log);
+        }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = jwtUtils.generateJwtToken(authentication);

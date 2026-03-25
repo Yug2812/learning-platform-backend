@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,6 +31,12 @@ public class User {
 
     @NotBlank
     private String password;
+
+    private int failedAttemptCount = 0;
+    
+    private boolean accountNonLocked = true;
+    
+    private LocalDateTime lockTime;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "user_roles",
