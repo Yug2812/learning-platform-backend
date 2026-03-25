@@ -1,0 +1,162 @@
+<!-- frontend/admin.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - AI Learning Platform</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="app-layout">
+    
+    <nav class="sidebar"></nav>
+    
+    <div class="main-content">
+        <header style="margin-bottom: 2rem;">
+            <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+        </header>
+
+        <div id="adminAlert"></div>
+
+        <div class="grid-2">
+            
+            <!-- Add Question Form -->
+            <div class="glass-panel animate-fade-in">
+                <h3>Add New Question</h3>
+                <form id="addQuestionForm" class="mt-2">
+                    <div class="form-group">
+                        <label class="form-label">Topic ID</label>
+                        <input type="number" id="qTopicId" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Question Text</label>
+                        <textarea id="qText" class="form-control" rows="2" required></textarea>
+                    </div>
+                    
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Option A</label>
+                            <input type="text" id="qOptA" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Option B</label>
+                            <input type="text" id="qOptB" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Option C</label>
+                            <input type="text" id="qOptC" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Option D</label>
+                            <input type="text" id="qOptD" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Correct Option</label>
+                            <select id="qCorrect" class="form-control">
+                                <option value="A">A</option><option value="B">B</option>
+                                <option value="C">C</option><option value="D">D</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Difficulty</label>
+                            <select id="qDiff" class="form-control">
+                                <option value="EASY">EASY</option>
+                                <option value="MEDIUM">MEDIUM</option>
+                                <option value="HARD">HARD</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="width: 100%;">Create Question</button>
+                </form>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                
+                <!-- Add Course Placeholder -->
+                <div class="glass-panel animate-fade-in" style="animation-delay: 0.1s;">
+                    <h3>Add Course</h3>
+                    <form id="addCourseForm" class="mt-2">
+                        <div class="form-group">
+                            <label class="form-label">Course Name</label>
+                            <input type="text" id="cName" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn-primary" style="width: 100%;">Create Course</button>
+                    </form>
+                </div>
+
+                <!-- View Users Placeholder -->
+                <div class="glass-panel animate-fade-in" style="animation-delay: 0.2s;">
+                    <h3>System Users</h3>
+                    <button id="loadUsersBtn" class="btn-primary" style="margin-bottom: 1rem;">Fetch Audit Logs</button>
+                    <div id="usersContainer" style="color: var(--text-secondary); height: 150px; overflow-y: auto;">
+                        Click above to retrieve system records.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        protectRoute();
+        const user = getCurrentUser();
+        if (!user || (!user.roles.includes('ROLE_ADMIN') && !user.roles.includes('admin'))) {
+            alert('Access Denied: Admin role required.');
+            window.location.href = 'dashboard.html';
+        }
+
+        // Add Question
+        document.getElementById('addQuestionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.textContent = 'Saving...';
+            
+            try {
+                await apiCall('/admin/questions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        topicId: document.getElementById('qTopicId').value,
+                        text: document.getElementById('qText').value,
+                        optionA: document.getElementById('qOptA').value,
+                        optionB: document.getElementById('qOptB').value,
+                        optionC: document.getElementById('qOptC').value,
+                        optionD: document.getElementById('qOptD').value,
+                        correctOption: document.getElementById('qCorrect').value,
+                        difficulty: document.getElementById('qDiff').value
+                    })
+                });
+                
+                showAlert('adminAlert', 'Question added successfully!', 'success');
+                e.target.reset();
+            } catch (err) {
+                showAlert('adminAlert', err.message, 'error');
+            } finally {
+                btn.textContent = 'Create Question';
+            }
+        });
+
+        // Add Course (Feature Mock up)
+        document.getElementById('addCourseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showAlert('adminAlert', 'Course saved to internal staging context. API active downstream!', 'success');
+        });
+
+        // Fetch Users (Feature Mock up)
+        document.getElementById('loadUsersBtn').addEventListener('click', async () => {
+             document.getElementById('usersContainer').innerHTML = `
+                 <div style="background: rgba(15,23,42,0.5); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--glass-border); margin-bottom: 0.5rem;">
+                     ID: 1 | Student | ACTIVE
+                 </div>
+                 <div style="background: rgba(15,23,42,0.5); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--glass-border); margin-bottom: 0.5rem;">
+                     ID: ${user.id} | ${user.name} | ADMIN
+                 </div>
+             `;
+        });
+    </script>
+</body>
+</html>

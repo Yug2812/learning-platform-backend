@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AI Learning Platform</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="flex-center">
+
+    <div class="glass-panel animate-fade-in" style="width: 100%; max-width: 400px;">
+        <h2 class="text-center">Welcome Back</h2>
+        <p class="text-center">Login to continue your learning journey.</p>
+        
+        <div id="loginAlert"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label class="form-label" for="email">Email</label>
+                <input type="email" id="email" class="form-control" required placeholder="student@example.com">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <input type="password" id="password" class="form-control" required placeholder="••••••••">
+            </div>
+            
+            <button type="submit" class="btn-primary" style="width: 100%">Sign In</button>
+        </form>
+        
+        <p class="text-center mt-2" style="font-size: 0.9rem;">
+            Don't have an account? <a href="register.html" style="color: var(--accent);">Sign up</a>
+        </p>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        if (isAuthenticated()) window.location.href = 'dashboard.html';
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            const btn = e.target.querySelector('button');
+            btn.textContent = 'Authenticating...';
+            btn.disabled = true;
+
+            try {
+                const res = await apiCall('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password })
+                });
+                
+                setToken(res.data.token);
+                
+                const user = {
+                    id: res.data.id,
+                    name: res.data.username, // JWT returning name or username
+                    email: res.data.email,
+                    roles: res.data.roles
+                };
+                
+                // Let's call /api/auth/me to ensure we have exact shape, 
+                // OR we can rely on JWT response. Our AuthController returns: id, name, email, roles
+                user.name = res.data.name; 
+                setCurrentUser(user);
+
+                window.location.href = 'dashboard.html';
+            } catch (err) {
+                showAlert('loginAlert', err.message, 'error');
+            } finally {
+                btn.textContent = 'Sign In';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

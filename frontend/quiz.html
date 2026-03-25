@@ -1,0 +1,166 @@
+<!-- frontend/quiz.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take Quiz - AI Learning Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .option-label {
+            display: block;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option-label:hover { background: rgba(139, 92, 246, 0.1); border-color: var(--accent); }
+        .option-input:checked + .option-label {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="app-layout">
+    <nav class="sidebar"></nav>
+    <div class="main-content">
+        <div id="quizAlert"></div>
+
+        <!-- Topic Selection -->
+        <div id="topicSelection" class="glass-panel animate-fade-in" style="max-width: 500px; margin: 0 auto;">
+            <h2 class="text-center">Select Quiz Topic</h2>
+            <div class="form-group mt-2">
+                <label class="form-label">Topic ID</label>
+                <input type="number" id="topicIdInput" class="form-control" value="1" min="1">
+            </div>
+            <button id="startQuizBtn" class="btn-primary" style="width: 100%;">Start Quiz</button>
+        </div>
+
+        <!-- Quiz Container -->
+        <div id="quizContainer" style="display: none; max-width: 800px; margin: 0 auto;">
+            <div class="glass-panel animate-fade-in">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 id="quizTitle">Topic Quiz</h2>
+                    <span id="questionCounter" style="color: var(--accent); font-weight: 700;"></span>
+                </div>
+                
+                <div id="questionsWrapper" class="mt-2"></div>
+                
+                <button id="submitQuizBtn" class="btn-primary mt-2" style="width: 100%;">Submit Answers</button>
+            </div>
+        </div>
+
+        <!-- Result Container -->
+        <div id="resultContainer" class="glass-panel animate-fade-in" style="display: none; max-width: 500px; margin: 0 auto; text-align: center;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🏆</div>
+            <h2>Quiz Completed!</h2>
+            <div class="stat-value mt-2" id="scoreDisplay" style="font-size: 4rem;">0%</div>
+            <p id="resultMessage" style="color: var(--text-secondary); margin-top: 1rem;"></p>
+            <p id="suspiciousFlag" style="color: var(--danger); font-weight: 500; display: none; margin-top: 1rem;">⚠ Flagged for suspicious completion time.</p>
+            
+            <a href="dashboard.html" class="btn-primary mt-2">Return to Dashboard</a>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        protectRoute();
+        
+        let questions = [];
+        let startTime = null;
+        let selectedTopicId = null;
+
+        document.getElementById('startQuizBtn').addEventListener('click', async () => {
+            selectedTopicId = document.getElementById('topicIdInput').value;
+            if (!selectedTopicId) return;
+
+            const btn = document.getElementById('startQuizBtn');
+            btn.textContent = 'Loading...';
+
+            try {
+                questions = await apiCall(`/student/topics/${selectedTopicId}/questions`);
+                if (!questions || questions.length === 0) {
+                    throw new Error('No questions found for this topic.');
+                }
+
+                document.getElementById('topicSelection').style.display = 'none';
+                document.getElementById('quizContainer').style.display = 'block';
+                startTime = new Date().toISOString();
+                renderQuestions();
+            } catch (err) {
+                showAlert('quizAlert', err.message, 'error');
+            } finally {
+                btn.textContent = 'Start Quiz';
+            }
+        });
+
+        function renderQuestions() {
+            document.getElementById('questionCounter').textContent = `${questions.length} Questions`;
+            const wrapper = document.getElementById('questionsWrapper');
+            
+            wrapper.innerHTML = questions.map((q, index) => `
+                <div class="form-group" style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: white;">${index + 1}. ${q.text}</h3>
+                    <div style="display: grid; gap: 0.5rem;">
+                        <input type="radio" id="q${q.id}_A" name="q${q.id}" value="A" class="option-input" style="display:none;">
+                        <label for="q${q.id}_A" class="option-label">A. ${q.optionA}</label>
+                        
+                        <input type="radio" id="q${q.id}_B" name="q${q.id}" value="B" class="option-input" style="display:none;">
+                        <label for="q${q.id}_B" class="option-label">B. ${q.optionB}</label>
+                        
+                        <input type="radio" id="q${q.id}_C" name="q${q.id}" value="C" class="option-input" style="display:none;">
+                        <label for="q${q.id}_C" class="option-label">C. ${q.optionC}</label>
+                        
+                        <input type="radio" id="q${q.id}_D" name="q${q.id}" value="D" class="option-input" style="display:none;">
+                        <label for="q${q.id}_D" class="option-label">D. ${q.optionD}</label>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('submitQuizBtn').addEventListener('click', async () => {
+            const answers = {};
+            questions.forEach(q => {
+                const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+                if (selected) answers[q.id] = selected.value;
+            });
+
+            const endTime = new Date().toISOString();
+            const btn = document.getElementById('submitQuizBtn');
+            btn.textContent = 'Evaluating...';
+            btn.disabled = true;
+
+            try {
+                const result = await apiCall(`/student/quiz/submit`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        topicId: selectedTopicId,
+                        answers: answers,
+                        startTime: startTime,
+                        endTime: endTime
+                    })
+                });
+
+                document.getElementById('quizContainer').style.display = 'none';
+                document.getElementById('resultContainer').style.display = 'block';
+
+                document.getElementById('scoreDisplay').textContent = `${Math.round(result.percentage || 0)}%`;
+                document.getElementById('resultMessage').textContent = result.message || `You scored ${result.score} out of ${result.totalQuestions}!`;
+                
+                if (result.flaggedSuspicious) {
+                    document.getElementById('suspiciousFlag').style.display = 'block';
+                }
+
+            } catch (err) {
+                showAlert('quizAlert', 'Failed to submit quiz. Ensure your inputs match database requirements.', 'error');
+                btn.textContent = 'Submit Answers';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Learning Support Platform</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="flex-center" style="text-align: center;">
+
+    <div class="glass-panel animate-fade-in" style="max-width: 600px; padding: 4rem 2rem;">
+        <h1 style="font-size: 3rem; margin-bottom: 1rem;"><span style="color: var(--accent);">AI</span> Learning Platform</h1>
+        <p style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 2rem;">
+            Experience dynamically generated paths, structured assessments, and intelligent recommendations to accelerate your educational journey.
+        </p>
+        
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+            <a href="register.html" class="btn-primary">Get Started</a>
+            <a href="login.html" class="btn-primary" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border);">Log In</a>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Redirect to dashboard immediately if already authenticated
+        if (isAuthenticated()) {
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+</body>
+</html>

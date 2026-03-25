@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - AI Learning Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="app-layout">
+    
+    <nav class="sidebar">
+        <!-- Managed by script.js renderSidebar() -->
+    </nav>
+    
+    <div class="main-content">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2>Welcome, <span id="header-user-name" style="color: var(--accent);"></span></h2>
+            <button id="logout-btn" class="btn-primary" style="background: rgba(239, 68, 68, 0.2); color: var(--danger); box-shadow: none;">Logout</button>
+        </header>
+        
+        <div id="dashboardAlert"></div>
+
+        <div class="grid-2">
+            <!-- Analytics Overview -->
+            <div class="glass-panel animate-fade-in">
+                <h3>Performance Analytics</h3>
+                <div style="display: flex; justify-content: space-around; margin: 2rem 0;">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalAttempts">0</div>
+                        <div class="stat-label">Total Quizzes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="averageScore">0%</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                </div>
+                <!-- Chart.js Canvas -->
+                <div style="height: 200px; position: relative;">
+                    <canvas id="scoreChart"></canvas>
+                </div>
+            </div>
+
+            <!-- AI Recommendations -->
+            <div class="glass-panel animate-fade-in" style="animation-delay: 0.1s;">
+                <h3><span style="color: var(--accent);">✨ AI</span> Recommended Paths</h3>
+                <p>Based on your latest assessments</p>
+                <div id="aiRecommendationsContainer" style="margin-top: 1.5rem;">
+                    <!-- Injected via JS -->
+                    <div class="text-center" style="color: var(--text-secondary); padding: 2rem;">
+                        Loading AI insights...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Topics Breakdown -->
+        <div class="glass-panel animate-fade-in mt-2" style="animation-delay: 0.2s;">
+            <h3>Topic Mastery Analysis</h3>
+            <div class="grid-2 mt-2">
+                <div>
+                    <h4 style="color: var(--success);">✔ Strong Topics</h4>
+                    <ul id="strongTopicsList" style="list-style: none; color: var(--text-secondary); padding-left: 0.5rem; line-height: 2;">
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: var(--danger);">✘ Weak Topics</h4>
+                    <ul id="weakTopicsList" style="list-style: none; color: var(--text-secondary); padding-left: 0.5rem; line-height: 2;">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        protectRoute();
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = getCurrentUser();
+            if (!user) return;
+
+            try {
+                // 1. Fetch Analytics
+                const analytics = await apiCall(`/student/analytics/${user.id}`);
+                
+                document.getElementById('totalAttempts').textContent = analytics.totalAttempts || 0;
+                document.getElementById('averageScore').textContent = (analytics.averageScorePercentage || 0).toFixed(1) + '%';
+                
+                // Populate Lists
+                const stList = document.getElementById('strongTopicsList');
+                stList.innerHTML = analytics.strongTopics?.length ? 
+                    analytics.strongTopics.map(t => `<li>${t}</li>`).join('') : '<li>Not enough data</li>';
+
+                const wkList = document.getElementById('weakTopicsList');
+                wkList.innerHTML = analytics.weakTopics?.length ? 
+                    analytics.weakTopics.map(t => `<li>${t}</li>`).join('') : '<li>Awesome, no weak topics detected!</li>';
+
+                // Chart.js render
+                const ctx = document.getElementById('scoreChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Average Score', 'Missed'],
+                        datasets: [{
+                            data: [analytics.averageScorePercentage || 0, Math.max(0, 100 - (analytics.averageScorePercentage || 0))],
+                            backgroundColor: ['#8b5cf6', 'rgba(15, 23, 42, 0.5)'],
+                            borderColor: ['#7c3aed', 'rgba(255,255,255,0.1)'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+
+                // 2. Fetch AI Recommendations
+                const aiList = await apiCall(`/ai/recommendations/${user.id}`);
+                const aiContainer = document.getElementById('aiRecommendationsContainer');
+                
+                if (aiList && aiList.length > 0) {
+                    aiContainer.innerHTML = aiList.map(rec => {
+                        let color = rec.recommendationType === 'EASY' ? '#10b981' : 
+                                    (rec.recommendationType === 'MEDIUM' ? '#f59e0b' : '#ef4444');
+                        return `
+                        <div style="background: rgba(15, 23, 42, 0.5); border-left: 4px solid ${color}; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <h4 style="margin: 0; color: white;">${rec.recommendedTopic ? rec.recommendedTopic.title : 'General Path'}</h4>
+                                <span style="background: ${color}20; color: ${color}; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 700;">${rec.recommendationType}</span>
+                            </div>
+                            <p style="margin: 0; font-size: 0.9rem;">${rec.reason}</p>
+                        </div>
+                        `;
+                    }).join('');
+                } else {
+                    aiContainer.innerHTML = `
+                    <div class="text-center" style="color: var(--text-secondary); padding: 2rem;">
+                        <span style="font-size: 2rem; display:block; margin-bottom: 1rem;">🏁</span>
+                        No generated AI data yet. Take a quiz to unlock tailored recommendations!
+                    </div>`;
+                }
+
+            } catch (err) {
+                showAlert('dashboardAlert', 'Failed to load dashboard data.', 'error');
+            }
+        });
+    </script>
+</body>
+</html>
