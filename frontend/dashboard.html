@@ -59,18 +59,41 @@
             <h3>Topic Mastery Analysis</h3>
             <div class="grid-2 mt-2">
                 <div>
-                    <h4 style="color: var(--success);">✔ Strong Topics</h4>
+                    <h4 style="color: var(--success);"><i class="fas fa-check"></i> Strong Topics</h4>
                     <ul id="strongTopicsList" style="list-style: none; color: var(--text-secondary); padding-left: 0.5rem; line-height: 2;">
                     </ul>
                 </div>
                 <div>
-                    <h4 style="color: var(--danger);">✘ Weak Topics</h4>
+                    <h4 style="color: var(--danger);"><i class="fas fa-times"></i> Weak Topics</h4>
                     <ul id="weakTopicsList" style="list-style: none; color: var(--text-secondary); padding-left: 0.5rem; line-height: 2;">
                     </ul>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Floating Chatbot Widget -->
+    <div id="chatWidget" class="glass-panel animate-fade-in" style="display: none; position: fixed; bottom: 80px; right: 20px; width: 350px; height: 450px; flex-direction: column; padding: 1rem; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+        <div style="border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem; margin-bottom: 1rem; font-weight: 600; color: white;">
+            ✨ AI Tutor Assistant
+            <button id="closeChatBtn" style="float: right; background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.2rem;">✕</button>
+        </div>
+        
+        <div id="chatMessages" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; font-size: 0.9rem;">
+            <div style="background: rgba(139, 92, 246, 0.2); padding: 0.75rem; border-radius: 8px; align-self: flex-start; max-width: 80%;">
+                Hi there! I'm your AI tutor. Ask me any conceptual questions related to your weak topics!
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="chatInput" class="form-control" placeholder="Ask a question..." style="padding: 0.5rem; font-size: 0.9rem;">
+            <button id="sendChatBtn" class="btn-primary" style="padding: 0.5rem 1rem;">Send</button>
+        </div>
+    </div>
+
+    <button id="toggleChatBtn" class="btn-primary" style="position: fixed; bottom: 20px; right: 20px; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; z-index: 1000; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); font-size: 1.5rem;">
+        💬
+    </button>
 
     <script src="script.js"></script>
     <script>
@@ -146,6 +169,63 @@
 
             } catch (err) {
                 showAlert('dashboardAlert', 'Failed to load dashboard data.', 'error');
+            }
+        });
+
+        // Chatbot Interaction Logic
+        document.getElementById('toggleChatBtn').addEventListener('click', () => {
+            const widget = document.getElementById('chatWidget');
+            widget.style.display = widget.style.display === 'none' ? 'flex' : 'none';
+        });
+
+        document.getElementById('closeChatBtn').addEventListener('click', () => {
+            document.getElementById('chatWidget').style.display = 'none';
+        });
+
+        document.getElementById('sendChatBtn').addEventListener('click', async () => {
+            const inputEl = document.getElementById('chatInput');
+            const message = inputEl.value.trim();
+            if (!message) return;
+
+            const msgContainer = document.getElementById('chatMessages');
+
+            msgContainer.innerHTML += `
+                <div style="background: rgba(15, 23, 42, 0.8); padding: 0.75rem; border-radius: 8px; align-self: flex-end; max-width: 80%; border: 1px solid var(--glass-border); color: white;">
+                    ${message}
+                </div>
+            `;
+            inputEl.value = '';
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+
+            const loadingId = 'loading-' + Date.now();
+            msgContainer.innerHTML += `
+                <div id="${loadingId}" style="background: rgba(139, 92, 246, 0.1); padding: 0.75rem; border-radius: 8px; align-self: flex-start; max-width: 80%; font-style: italic; color: var(--text-secondary);">
+                    Thinking... ⏳
+                </div>
+            `;
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+
+            try {
+                const res = await apiCall('/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({ message })
+                });
+
+                document.getElementById(loadingId).remove();
+                
+                msgContainer.innerHTML += `
+                    <div style="background: rgba(139, 92, 246, 0.2); padding: 0.75rem; border-radius: 8px; align-self: flex-start; max-width: 80%; color: white;">
+                        ${res.response || 'No response.'}
+                    </div>
+                `;
+                msgContainer.scrollTop = msgContainer.scrollHeight;
+            } catch (err) {
+                document.getElementById(loadingId).remove();
+                msgContainer.innerHTML += `
+                    <div style="background: rgba(239, 68, 68, 0.2); padding: 0.75rem; border-radius: 8px; align-self: flex-start; max-width: 80%; color: var(--danger);">
+                        Error: ${err.message}
+                    </div>
+                `;
             }
         });
     </script>
