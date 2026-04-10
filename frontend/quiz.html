@@ -26,18 +26,24 @@
     </style>
 </head>
 <body class="app-layout">
-    <nav class="sidebar"></nav>
+    <header id="app-header" class="app-header"></header>
     <div class="main-content">
         <div id="quizAlert"></div>
 
         <!-- Topic Selection -->
-        <div id="topicSelection" class="glass-panel animate-fade-in" style="max-width: 500px; margin: 0 auto;">
-            <h2 class="text-center">Select Quiz Topic</h2>
-            <div class="form-group mt-2">
-                <label class="form-label">Topic ID</label>
-                <input type="number" id="topicIdInput" class="form-control" value="1" min="1">
+        <div id="topicSelection" class="glass-panel animate-fade-in" style="max-width: 550px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <span style="font-size: 3rem;">🧠</span>
+                <h2 style="margin-top: 0.5rem;">Select Quiz Topic</h2>
+                <p style="color: var(--text-secondary); font-size: 0.95rem;">Type a topic name to search and start your quiz</p>
             </div>
-            <button id="startQuizBtn" class="btn-primary" style="width: 100%;">Start Quiz</button>
+            <div class="form-group" style="position: relative;">
+                <label class="form-label">Topic Name</label>
+                <input type="text" id="topicNameInput" class="form-control" placeholder="e.g. Python, Data Structures, Networking..." autocomplete="off">
+                <div id="topicSuggestions" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; z-index: 100; max-height: 200px; overflow-y: auto; box-shadow: 0 8px 20px rgba(0,0,0,0.4);">
+                </div>
+            </div>
+            <button id="startQuizBtn" class="btn-primary" style="width: 100%; margin-top: 1rem;">🚀 Start Quiz</button>
         </div>
 
         <!-- Quiz Container -->
@@ -65,6 +71,7 @@
             <a href="dashboard.html" class="btn-primary mt-2">Return to Dashboard</a>
         </div>
     </div>
+    <footer id="app-footer" class="app-footer"></footer>
 
     <script src="script.js"></script>
     <script>
@@ -72,31 +79,81 @@
         
         let questions = [];
         let startTime = null;
-        let selectedTopicId = null;
+        let selectedTopicName = null;
+        let searchTimeout = null;
+
+        // Live topic search / autocomplete
+        const topicNameInput = document.getElementById('topicNameInput');
+        const suggestionsBox = document.getElementById('topicSuggestions');
+
+        topicNameInput.addEventListener('input', () => {
+            const query = topicNameInput.value.trim();
+            clearTimeout(searchTimeout);
+            if (query.length < 2) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const results = await apiCall(`/student/topics/search?name=${encodeURIComponent(query)}`);
+                    if (results && results.length > 0) {
+                        suggestionsBox.innerHTML = results.map(t => `
+                            <div class="dropdown-item" style="cursor: pointer;" data-name="${t.title}">${t.title}</div>
+                        `).join('');
+                        suggestionsBox.style.display = 'block';
+                        suggestionsBox.querySelectorAll('.dropdown-item').forEach(el => {
+                            el.addEventListener('click', () => {
+                                topicNameInput.value = el.dataset.name;
+                                suggestionsBox.style.display = 'none';
+                            });
+                        });
+                    } else {
+                        suggestionsBox.innerHTML = `<div class="dropdown-item" style="color: var(--text-secondary);">No matching topics found</div>`;
+                        suggestionsBox.style.display = 'block';
+                    }
+                } catch(e) {
+                    suggestionsBox.style.display = 'none';
+                }
+            }, 300);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#topicNameInput') && !e.target.closest('#topicSuggestions')) {
+                suggestionsBox.style.display = 'none';
+            }
+        });
 
         document.getElementById('startQuizBtn').addEventListener('click', async () => {
-            selectedTopicId = document.getElementById('topicIdInput').value;
-            if (!selectedTopicId) return;
+            const name = topicNameInput.value.trim();
+            if (!name) {
+                showAlert('quizAlert', 'Please enter a topic name to start the quiz.', 'error');
+                return;
+            }
+            selectedTopicName = name;
 
             const btn = document.getElementById('startQuizBtn');
-            btn.textContent = 'Loading...';
+            btn.textContent = '⏳ Loading...';
+            btn.disabled = true;
 
             try {
-                questions = await apiCall(`/student/topics/${selectedTopicId}/questions`);
+                questions = await apiCall(`/student/topics/by-name/${encodeURIComponent(selectedTopicName)}/questions`);
                 if (!questions || questions.length === 0) {
-                    throw new Error('No questions found for this topic.');
+                    throw new Error('No questions found for this topic. Please check the topic name or ask your admin to add questions.');
                 }
 
                 document.getElementById('topicSelection').style.display = 'none';
                 document.getElementById('quizContainer').style.display = 'block';
+                document.getElementById('quizTitle').textContent = `${selectedTopicName} Quiz`;
                 startTime = new Date().toISOString();
                 renderQuestions();
             } catch (err) {
                 showAlert('quizAlert', err.message, 'error');
             } finally {
-                btn.textContent = 'Start Quiz';
+                btn.textContent = '🚀 Start Quiz';
+                btn.disabled = false;
             }
         });
+
 
         function renderQuestions() {
             document.getElementById('questionCounter').textContent = `${questions.length} Questions`;

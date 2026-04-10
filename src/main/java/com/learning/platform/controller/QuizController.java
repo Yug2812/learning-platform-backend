@@ -4,6 +4,7 @@ import com.learning.platform.dto.request.QuestionRequest;
 import com.learning.platform.dto.request.QuizSubmitRequest;
 import com.learning.platform.dto.response.QuizResultResponse;
 import com.learning.platform.model.Question;
+import com.learning.platform.model.Topic;
 import com.learning.platform.security.services.UserDetailsImpl;
 import com.learning.platform.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,10 +30,25 @@ public class QuizController {
         return ResponseEntity.ok(quizService.createQuestion(request));
     }
 
+    // Legacy endpoint (by ID)
     @GetMapping("/student/topics/{topicId}/questions")
     @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<List<Question>> getQuestionsByTopic(@PathVariable Long topicId) {
         return ResponseEntity.ok(quizService.getQuestionsByTopic(topicId));
+    }
+
+    // User-friendly endpoint: search topics by name (returns list for autocomplete)
+    @GetMapping("/student/topics/search")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
+    public ResponseEntity<List<Topic>> searchTopics(@RequestParam String name) {
+        return ResponseEntity.ok(quizService.searchTopicsByName(name));
+    }
+
+    // User-friendly endpoint: get questions by topic name directly
+    @GetMapping("/student/topics/by-name/{name}/questions")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
+    public ResponseEntity<List<Question>> getQuestionsByTopicName(@PathVariable String name) {
+        return ResponseEntity.ok(quizService.getQuestionsByTopicName(name));
     }
 
     @PostMapping("/student/quiz/submit")

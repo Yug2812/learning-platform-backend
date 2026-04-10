@@ -3,38 +3,57 @@ server:
 
 spring:
   application:
-    name: platform
+    name: lumora-platform
 
-  # Default to H2 for local testing
+  # ─── DEFAULT: H2 File-based (local no-setup dev) ─────────
   datasource:
-    url: jdbc:h2:mem:learningdb
+    url: jdbc:h2:file:./data/learningdb;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
     driverClassName: org.h2.Driver
     username: sa
     password:
-  
+
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
+    show-sql: false
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always        # run data.sql on startup
+      encoding: UTF-8
 
   h2:
     console:
       enabled: true
       path: /h2-console
-      settings:
-        trace: false
-        web-allow-others: false
 
-# JWT Configuration
+# JWT
 app:
-  jwtSecret: "======================LearningPlatformSecretKey======================"
+  jwtSecret: "======================Lumora-SecretKey-v1======================"
   jwtExpirationMs: 86400000 # 24 hours
 
-# PostgreSQL configuration for Cloud (active when profile explicitly set, e.g. prod)
+# ─── MySQL Profile ────────────────────────────────────────
+---
+spring:
+  config:
+    activate:
+      on-profile: mysql
+  datasource:
+    url: jdbc:mysql://localhost:3306/lumora_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    driverClassName: com.mysql.cj.jdbc.Driver
+    username: root        # ← change to your MySQL username
+    password: yourpassword  # ← change to your MySQL password
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+  sql:
+    init:
+      mode: always
+
+# ─── PostgreSQL / Production ──────────────────────────────
 ---
 spring:
   config:
@@ -45,8 +64,10 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driverClassName: org.postgresql.Driver
-  
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
+  sql:
+    init:
+      mode: always

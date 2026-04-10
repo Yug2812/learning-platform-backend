@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Lumora</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="app-layout">
+    <header id="app-header" class="app-header"></header>
+
+    <div class="main-content">
+        <div id="profileAlert"></div>
+
+        <!-- Profile Hero -->
+        <div class="glass-panel animate-fade-in" style="text-align: center; padding: 3rem 2rem; margin-bottom: 2rem; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -60px; right: -60px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(139,92,246,0.2), transparent); border-radius: 50%;"></div>
+            <div style="position: absolute; bottom: -40px; left: -40px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(99,102,241,0.15), transparent); border-radius: 50%;"></div>
+
+            <div id="profileAvatar" style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); color: white; font-weight: 700; font-size: 2.5rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; border: 4px solid var(--glass-border); box-shadow: 0 0 30px rgba(139,92,246,0.4);">?</div>
+            <h1 id="profileName" style="margin: 0 0 0.25rem; font-size: 2rem;">Loading...</h1>
+            <div id="profileRole" style="color: var(--accent); text-transform: uppercase; letter-spacing: 2px; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.75rem;"></div>
+            <div id="profileEmail" style="color: var(--text-secondary); font-size: 0.95rem;"><i class="fas fa-envelope" style="margin-right: 0.4rem;"></i></div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="grid-2" style="margin-bottom: 2rem;">
+            <div class="glass-panel animate-fade-in" style="text-align: center; padding: 2rem;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎯</div>
+                <div class="stat-value" id="profileTotalQuizzes">—</div>
+                <div class="stat-label">Total Quizzes Taken</div>
+            </div>
+            <div class="glass-panel animate-fade-in" style="text-align: center; padding: 2rem;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📈</div>
+                <div class="stat-value" id="profileAvgScore">—</div>
+                <div class="stat-label">Average Score</div>
+            </div>
+        </div>
+
+        <!-- Account Info -->
+        <div class="glass-panel animate-fade-in" style="margin-bottom: 2rem;">
+            <h3 style="margin-top: 0; color: var(--accent);"><i class="fas fa-id-card" style="margin-right: 0.5rem;"></i>Account Information</h3>
+            <hr style="border-color: var(--glass-border); margin-bottom: 1.5rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.3rem;">Full Name</div>
+                    <div id="infoName" style="font-weight: 500; font-size: 1.1rem;">—</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.3rem;">Email</div>
+                    <div id="infoEmail" style="font-weight: 500; font-size: 1.1rem;">—</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.3rem;">Role</div>
+                    <div id="infoRole" style="font-weight: 500; font-size: 1.1rem;">—</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.3rem;">Member Since</div>
+                    <div style="font-weight: 500; font-size: 1.1rem;" id="infoSince">2026</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Results Placeholder -->
+        <div class="glass-panel animate-fade-in">
+            <h3 style="margin-top: 0; color: var(--accent);"><i class="fas fa-history" style="margin-right: 0.5rem;"></i>Recent Activity</h3>
+            <hr style="border-color: var(--glass-border); margin-bottom: 1.5rem;">
+            <div id="recentActivity" style="color: var(--text-secondary); text-align: center; padding: 2rem;">
+                <span style="font-size: 2rem;">📋</span>
+                <p style="margin-top: 0.5rem;">Take a quiz to see your recent activity here!</p>
+                <a href="quiz.html" class="btn-primary" style="display: inline-block; margin-top: 1rem;">🚀 Take a Quiz</a>
+            </div>
+        </div>
+    </div>
+
+    <footer id="app-footer" class="app-footer"></footer>
+
+    <script src="script.js"></script>
+    <script>
+        protectRoute();
+
+        const user = getCurrentUser();
+        if (user) {
+            const initial = user.name ? user.name.charAt(0).toUpperCase() : '?';
+            const role = user.roles && user.roles.length > 0 ? user.roles[0].replace('ROLE_', '') : 'STUDENT';
+
+            document.getElementById('profileAvatar').textContent = initial;
+            document.getElementById('profileName').textContent = user.name || 'Unknown';
+            document.getElementById('profileRole').textContent = role;
+            document.getElementById('profileEmail').innerHTML = `<i class="fas fa-envelope" style="margin-right: 0.4rem;"></i>${user.email || ''}`;
+            document.getElementById('infoName').textContent = user.name || '—';
+            document.getElementById('infoEmail').textContent = user.email || '—';
+            document.getElementById('infoRole').textContent = role;
+        }
+
+        // Load analytics stats
+        apiCall('/student/analytics/summary').then(data => {
+            if (data) {
+                document.getElementById('profileTotalQuizzes').textContent = data.totalAttempts ?? '0';
+                document.getElementById('profileAvgScore').textContent = data.averageScore != null ? data.averageScore.toFixed(1) + '%' : '0%';
+            }
+        }).catch(() => {
+            document.getElementById('profileTotalQuizzes').textContent = '0';
+            document.getElementById('profileAvgScore').textContent = '0%';
+        });
+    </script>
+</body>
+</html>

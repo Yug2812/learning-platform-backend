@@ -8,16 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="app-layout">
-    
-    <nav class="sidebar">
-        <!-- Managed by script.js renderSidebar() -->
-    </nav>
+    <header id="app-header" class="app-header"></header>
     
     <div class="main-content">
-        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h2>Welcome, <span id="header-user-name" style="color: var(--accent);"></span></h2>
-            <button id="logout-btn" class="btn-primary" style="background: rgba(239, 68, 68, 0.2); color: var(--danger); box-shadow: none;">Logout</button>
-        </header>
         
         <div id="dashboardAlert"></div>
 
@@ -71,6 +64,7 @@
             </div>
         </div>
     </div>
+    <footer id="app-footer" class="app-footer"></footer>
 
     <!-- Floating Chatbot Widget -->
     <div id="chatWidget" class="glass-panel animate-fade-in" style="display: none; position: fixed; bottom: 80px; right: 20px; width: 350px; height: 450px; flex-direction: column; padding: 1rem; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">

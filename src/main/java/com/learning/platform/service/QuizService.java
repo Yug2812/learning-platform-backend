@@ -49,6 +49,18 @@ public class QuizService {
         return questions.stream().limit(10).collect(Collectors.toList());
     }
 
+    public List<Topic> searchTopicsByName(String keyword) {
+        return topicRepository.findByTitleContainingIgnoreCase(keyword);
+    }
+
+    public List<Question> getQuestionsByTopicName(String name) {
+        Topic topic = topicRepository.findByTitleIgnoreCase(name)
+                .orElseThrow(() -> new RuntimeException("Topic not found: " + name));
+        List<Question> questions = questionRepository.findByTopicId(topic.getId());
+        Collections.shuffle(questions);
+        return questions.stream().limit(10).collect(Collectors.toList());
+    }
+
     public QuizResultResponse submitQuiz(Long userId, QuizSubmitRequest request) {
         User user = userRepository.findById(userId).orElseThrow();
         Topic topic = topicRepository.findById(request.getTopicId()).orElseThrow();
