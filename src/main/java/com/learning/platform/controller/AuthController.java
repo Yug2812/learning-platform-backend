@@ -11,6 +11,8 @@ import com.learning.platform.repository.RoleRepository;
 import com.learning.platform.repository.UserRepository;
 import com.learning.platform.model.ActivityLog;
 import com.learning.platform.repository.ActivityLogRepository;
+import com.learning.platform.model.Faculty;
+import com.learning.platform.repository.FacultyRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.authentication.BadCredentialsException;
 import com.learning.platform.security.jwt.JwtUtils;
@@ -42,6 +44,9 @@ public class AuthController {
 
     @Autowired
     RoleRepository roleRepository;
+
+    @Autowired
+    FacultyRepository facultyRepository;
 
     @Autowired
     PasswordEncoder encoder;
@@ -139,6 +144,10 @@ public class AuthController {
                     Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
                             .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
                     roles.add(adminRole);
+                } else if (role.equals("teacher")) {
+                    Role teacherRole = roleRepository.findByName(ERole.ROLE_TEACHER)
+                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                    roles.add(teacherRole);
                 } else {
                     Role userRole = roleRepository.findByName(ERole.ROLE_STUDENT)
                             .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
@@ -149,6 +158,14 @@ public class AuthController {
 
         user.setRoles(roles);
         userRepository.save(user);
+
+        if (roles.stream().anyMatch(r -> r.getName().equals(ERole.ROLE_TEACHER))) {
+            Faculty faculty = new Faculty();
+            faculty.setUser(user);
+            faculty.setName(user.getName());
+            faculty.setEmail(user.getEmail());
+            facultyRepository.save(faculty);
+        }
 
         return ResponseEntity.ok(new ApiResponse<>("success", "User registered successfully!", null));
     }

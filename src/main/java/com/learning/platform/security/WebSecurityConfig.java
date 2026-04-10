@@ -61,6 +61,10 @@ public class WebSecurityConfig {
                     .requestMatchers("/h2-console/**").permitAll()
                     .requestMatchers("/api/admin/**").hasRole("ADMIN")
                     .requestMatchers("/api/student/**").hasRole("STUDENT")
+                    .requestMatchers("/api/faculty/me", "/api/faculty/*/slots").hasRole("TEACHER")
+                    .requestMatchers("/api/faculty/**").authenticated()
+                    .requestMatchers("/api/appointment/book", "/api/appointment/student/**").hasRole("STUDENT")
+                    .requestMatchers("/api/appointment/faculty/**", "/api/appointment/approve/**", "/api/appointment/reject/**", "/api/appointment/reschedule/**").hasRole("TEACHER")
                     .anyRequest().authenticated()
             );
         

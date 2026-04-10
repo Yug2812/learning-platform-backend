@@ -24,7 +24,16 @@ public class DataSeeder implements CommandLineRunner {
             studentRole.setName(ERole.ROLE_STUDENT);
             roleRepository.save(studentRole);
             
+            Role teacherRole = new Role();
+            teacherRole.setName(ERole.ROLE_TEACHER);
+            roleRepository.save(teacherRole);
+
             System.out.println("Default roles added to the database.");
+        } else if (!roleRepository.findByName(ERole.ROLE_TEACHER).isPresent()) {
+            Role teacherRole = new Role();
+            teacherRole.setName(ERole.ROLE_TEACHER);
+            roleRepository.save(teacherRole);
+            System.out.println("Teacher role added to the database.");
         }
     }
 }
